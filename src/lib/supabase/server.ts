@@ -1,13 +1,21 @@
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import type { Database } from '@/types/database.types'
 
 export async function createClient() {
   const cookieStore = await cookies()
+  const headersList = await headers()
+  const authHeader = headersList.get('Authorization')
+
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: {
+        headers: {
+          ...(authHeader ? { Authorization: authHeader } : {}),
+        },
+      },
       cookies: {
         getAll() { return cookieStore.getAll() },
         setAll(cookiesToSet) {
