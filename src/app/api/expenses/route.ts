@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { expenseSchema } from '@/lib/validations/expense'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -36,17 +37,20 @@ export async function POST(request: Request) {
 
   const body = await request.json()
 
+  const validation = expenseSchema.safeParse(body)
+
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: validation.error.flatten().fieldErrors },
+      { status: 400 }
+    )
+  }
+
   const { data, error } = await supabase
     .from('expenses')
     .insert({
       user_id: user.id,
-      merchant: body.merchant,
-      amount: body.amount,
-      currency: body.currency ?? 'USD',
-      date: body.date,
-      category_id: body.category_id ?? null,
-      notes: body.notes ?? null,
-      source: 'manual',
+      ...validation.data,
     })
     .select()
     .single()
